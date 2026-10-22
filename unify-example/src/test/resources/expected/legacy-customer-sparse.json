@@ -1,0 +1,13 @@
+{
+  "customerId": "C1",
+  "name": null,
+  "phone": null,
+  "status": "UNKNOWN",
+  "level": "NORMAL",
+  "balance": null,
+  "registeredAt": null,
+  "tags": null,
+  "address": { "province": null, "city": null },
+  "orders": [],
+  "source": "LEGACY_CRM"
+}

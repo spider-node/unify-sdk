@@ -1,0 +1,16 @@
+{
+  "customerId": "M2001",
+  "name": "小李",
+  "phone": "139****1111",
+  "status": "ACTIVE",
+  "level": "GOLD",
+  "balance": 88.80,
+  "registeredAt": "2024-03-01T08:00:00+08:00",
+  "tags": ["vip", "early"],
+  "address": { "province": "浙江", "city": "杭州" },
+  "orders": [
+    { "orderNo": "B100", "amount": 59.90, "paid": true },
+    { "orderNo": "B102", "amount": 5.00, "paid": false }
+  ],
+  "source": "MEMBER_CENTER"
+}

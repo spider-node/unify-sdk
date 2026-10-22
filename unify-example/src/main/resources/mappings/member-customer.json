@@ -1,0 +1,40 @@
+{
+  // 会员中心：嵌套结构、金额是字符串、注册时间是毫秒时间戳、标签可能重复或为空
+  "name": "member-customer",
+  "description": "会员中心会员 → 统一客户",
+  "options": { "omitNulls": true },
+  "mapping": {
+    "customerId": "=concat('M', $.member.uid)",
+    "name": "=coalesce(trimToNull($.member.realName), $.member.nickname)",
+    "phone": "=maskPhone($.member.mobile)",
+    "email": "=lower($.member.email)",
+    "status": {
+      "$switch": "$.member.state",
+      "$cases": { "normal": "ACTIVE", "frozen": "FROZEN", "deleted": "CLOSED" },
+      "$default": "UNKNOWN"
+    },
+    "level": {
+      "$if": "=gte($.member.level, 3)",
+      "$then": "GOLD",
+      "$else": "NORMAL"
+    },
+    "balance": "=round(toNumber($.wallet.balance), 2)",
+    "registeredAt": "=epochMillisToDateTime($.createdAt, '+08:00')",
+    "tags": "=distinct(compact($.labels))",
+    "address": {
+      "province": "$.addresses[0].province",
+      "city": "$.addresses[0].city"
+    },
+    "orders": {
+      "$each": "$.orders",
+      "$filter": "=ne($.status, 'CANCELLED')",
+      "$item": {
+        "orderNo": "$.id",
+        "amount": "=round($.amount, 2)",
+        "paid": "=eq($.status, 'PAID')"
+      },
+      "$default": []
+    },
+    "source": "MEMBER_CENTER"
+  }
+}

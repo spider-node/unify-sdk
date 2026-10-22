@@ -12,7 +12,7 @@
 
     <artifactId>unify-example</artifactId>
     <name>Unify SDK :: Example</name>
-    <description>示例：客户资料（按来源路由）与客户标签（多源并行合并）两项统一能力。</description>
+    <description>示例：把老 CRM、会员中心两套客户 JSON 转换为统一客户 JSON，并演示自定义函数。</description>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>

@@ -1,0 +1,9 @@
+{
+  "orderNo": "SO-1001",
+  "buyer": "ALICE",
+  "total": 20.00,
+  "lines": [
+    { "sku": "A-1", "qty": 2 },
+    { "sku": "B-7", "qty": 1 }
+  ]
+}

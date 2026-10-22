@@ -1,0 +1,13 @@
+{
+  // 测试用映射：订单
+  "name": "order",
+  "mapping": {
+    "orderNo": "$.no",
+    "buyer": "=upper($.buyer.name)",
+    "total": "=round($.amount, 2)",
+    "lines": {
+      "$each": "$.lines",
+      "$item": { "sku": "$.sku", "qty": "$.qty" }
+    }
+  }
+}

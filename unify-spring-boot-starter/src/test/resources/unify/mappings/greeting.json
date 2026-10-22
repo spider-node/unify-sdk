@@ -1,0 +1,7 @@
+{
+  "name": "greeting",
+  "description": "测试用映射",
+  "mapping": {
+    "message": "=concat('Hello, ', $.name)"
+  }
+}

@@ -1,42 +1,60 @@
 package com.unify.example;
 
-import com.unify.example.api.CustomerCapabilities;
-import com.unify.example.api.CustomerProfile;
-import com.unify.example.api.CustomerQuery;
-import com.unify.example.api.CustomerTags;
-import com.unify.example.source.legacy.LegacyCrmDataSource;
-import com.unify.example.source.marketing.MarketingDataSource;
-import com.unify.example.source.member.MemberCenterDataSource;
-import com.unify.example.source.risk.RiskDataSource;
-import com.unify.sdk.api.UnifiedClient;
-import com.unify.sdk.api.UnifiedException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.unify.sdk.JsonTransformer;
+import com.unify.sdk.TransformException;
 
 /**
- * 调用方视角的示例：只认识 {@link CustomerCapabilities} 和统一模型，
- * 不感知客户来自老 CRM 还是会员中心，也不感知标签来自几个系统。
+ * 运行示例：把两套来源的客户数据转换为统一客户 JSON，并演示临时 DSL 与错误信息。
  */
 public final class ExampleApplication {
+
+    private static final String AD_HOC_DSL = """
+            {
+              "mapping": {
+                "id": "$.CUST_ID",
+                "orderNos": "$.ORDERS[*].ORDER_NO",
+                "paidAmount": "=centsToYuan(first($.ORDERS[*].AMT_FEN))"
+              }
+            }
+            """;
+
+    private static final String BROKEN_DSL = """
+            { "mapping": { "phone": "=maskPhone($.MOBILE, 4)" } }
+            """;
 
     private ExampleApplication() {
     }
 
     public static void main(String[] args) {
-        try (UnifiedClient client = CustomerSdk.create(new LegacyCrmDataSource(), new MemberCenterDataSource(),
-                new MarketingDataSource(), new RiskDataSource())) {
+        JsonTransformer transformer = CustomerMappings.createTransformer();
+        String legacySource = CustomerMappings.readResource("samples/legacy-customer.json");
+        String memberSource = CustomerMappings.readResource("samples/member-customer.json");
 
-            for (String customerId : new String[]{"L1001", "M2001"}) {
-                CustomerQuery query = new CustomerQuery(customerId);
-                CustomerProfile profile = client.execute(CustomerCapabilities.QUERY_CUSTOMER, query);
-                CustomerTags tags = client.execute(CustomerCapabilities.QUERY_CUSTOMER_TAGS, query);
-                System.out.println(profile);
-                System.out.println(tags);
-            }
+        print("老 CRM → 统一客户", transformer.transformByName(CustomerMappings.LEGACY_CUSTOMER,
+                readTree(transformer, legacySource)));
+        print("会员中心 → 统一客户", transformer.transformByName(CustomerMappings.MEMBER_CUSTOMER,
+                readTree(transformer, memberSource)));
+        print("临时 DSL", readTree(transformer, transformer.transform(legacySource, AD_HOC_DSL)));
 
-            try {
-                client.execute(CustomerCapabilities.QUERY_CUSTOMER, new CustomerQuery("X9999"));
-            } catch (UnifiedException e) {
-                System.out.println("Expected failure: " + e.code() + " - " + e.getMessage());
-            }
+        try {
+            transformer.transform(legacySource, BROKEN_DSL);
+        } catch (TransformException e) {
+            System.out.println("== 错误示例 ==");
+            System.out.println(e.getMessage());
         }
+    }
+
+    private static JsonNode readTree(JsonTransformer transformer, String json) {
+        try {
+            return transformer.objectMapper().readTree(json);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static void print(String title, JsonNode output) {
+        System.out.println("== " + title + " ==");
+        System.out.println(output.toPrettyString());
     }
 }

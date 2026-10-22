@@ -15,16 +15,6 @@
         <dependencies>
             <dependency>
                 <groupId>com.unify</groupId>
-                <artifactId>unify-api</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.unify</groupId>
-                <artifactId>unify-spi</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.unify</groupId>
                 <artifactId>unify-core</artifactId>
                 <version>${project.version}</version>
             </dependency>

@@ -1,0 +1,16 @@
+{
+  "customerId": "C10086",
+  "name": "张三",
+  "phone": "138****5678",
+  "status": "ACTIVE",
+  "level": "GOLD",
+  "balance": 123.45,
+  "registeredAt": "2023-05-06T14:30:00+08:00",
+  "tags": ["vip", "new"],
+  "address": { "province": "广东", "city": "深圳" },
+  "orders": [
+    { "orderNo": "A001", "amount": 19.99, "paid": true },
+    { "orderNo": "A003", "amount": 0.00, "paid": false }
+  ],
+  "source": "LEGACY_CRM"
+}

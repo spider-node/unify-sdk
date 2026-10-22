@@ -1,0 +1,23 @@
+{
+  "member": {
+    "uid": "2001",
+    "nickname": "小李",
+    "realName": " ",
+    "mobile": "13900001111",
+    "email": null,
+    "level": 3,
+    "state": "normal"
+  },
+  "wallet": { "balance": "88.8" },
+  "createdAt": 1709251200000,
+  "labels": ["vip", "", "early", "vip", null],
+  "addresses": [
+    { "province": "浙江", "city": "杭州" },
+    { "province": "上海", "city": "上海" }
+  ],
+  "orders": [
+    { "id": "B100", "amount": 59.9, "status": "PAID" },
+    { "id": "B101", "amount": 10, "status": "CANCELLED" },
+    { "id": "B102", "amount": 5, "status": "CREATED" }
+  ]
+}

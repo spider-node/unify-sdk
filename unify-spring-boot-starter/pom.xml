@@ -12,7 +12,7 @@
 
     <artifactId>unify-spring-boot-starter</artifactId>
     <name>Unify SDK :: Spring Boot Starter</name>
-    <description>Spring Boot 自动装配：自动收集容器中的数据源、适配器、能力配置与拦截器，注册 UnifiedClient。</description>
+    <description>Spring Boot 自动装配：加载 classpath 中的映射 DSL，收集函数 Bean，注册 JsonTransformer。</description>
 
     <dependencyManagement>
         <dependencies>

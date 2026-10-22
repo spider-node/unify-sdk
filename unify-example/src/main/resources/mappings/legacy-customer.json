@@ -1,0 +1,39 @@
+{
+  // 老 CRM：大写字段、金额单位为分、状态是数字编码、标签是逗号分隔的字符串
+  "name": "legacy-customer",
+  "description": "老 CRM 客户 → 统一客户",
+  "mapping": {
+    "customerId": "=concat('C', toString($.CUST_ID))",
+    "name": "=trim($.CUST_NAME)",
+    "phone": "=maskPhone($.MOBILE)",
+    "status": {
+      "$switch": "$.STATUS",
+      "$cases": { "1": "ACTIVE", "2": "FROZEN", "9": "CLOSED" },
+      "$default": "UNKNOWN"
+    },
+    "level": {
+      "$if": "=contains(split($.TAGS, ','), 'vip')",
+      "$then": "GOLD",
+      "$else": "NORMAL"
+    },
+    "balance": "=centsToYuan($.BAL_FEN)",
+    "registeredAt": "=parseDateTime($.REG_TIME, 'yyyy-MM-dd HH:mm:ss', '+08:00')",
+    "tags": "=split($.TAGS, ',')",
+    "address": {
+      "province": "$.ADDR.PROV",
+      "city": "$.ADDR.CITY"
+    },
+    "orders": {
+      "$each": "$.ORDERS",
+      // 状态 9 为已作废
+      "$filter": "=ne($.STATE, 9)",
+      "$item": {
+        "orderNo": "$.ORDER_NO",
+        "amount": "=centsToYuan($.AMT_FEN)",
+        "paid": "=eq($.STATE, 2)"
+      },
+      "$default": []
+    },
+    "source": "LEGACY_CRM"
+  }
+}

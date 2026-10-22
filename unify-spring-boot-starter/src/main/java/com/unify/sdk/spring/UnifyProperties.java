@@ -1,35 +1,34 @@
 package com.unify.sdk.spring;
 
-import com.unify.sdk.api.FailurePolicy;
+import com.unify.sdk.JsonTransformer;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Unify SDK 配置项，前缀 {@code unify}。
- *
- * <pre>
- * unify:
- *   enabled: true
- *   default-timeout: 3s
- *   default-failure-policy: BEST_EFFORT
- *   logging-enabled: true
- * </pre>
+ * {@code unify.*} 配置项。
  */
 @ConfigurationProperties(prefix = "unify")
 public class UnifyProperties {
 
+    /** 默认的映射 DSL 位置。 */
+    public static final String DEFAULT_MAPPING_LOCATION = "classpath*:unify/mappings/**/*.json";
+
     /** 是否启用自动装配。 */
     private boolean enabled = true;
 
-    /** 全局默认超时，可被能力配置与单次调用参数覆盖。 */
-    private Duration defaultTimeout = Duration.ofSeconds(3);
+    /**
+     * 启动时预注册的映射 DSL 位置，支持 Spring 资源通配符。每个文件一个映射，必须声明 name；
+     * 任何一个文件不合法都会导致启动失败。
+     */
+    private List<String> mappingLocations = new ArrayList<>(List.of(DEFAULT_MAPPING_LOCATION));
 
-    /** 并行合并模式下的全局默认失败策略。 */
-    private FailurePolicy defaultFailurePolicy = FailurePolicy.BEST_EFFORT;
+    /** {@code transform(sourceJson, dslJson)} 缓存的已编译 DSL 个数，0 表示不缓存。 */
+    private int cacheSize = JsonTransformer.DEFAULT_CACHE_SIZE;
 
-    /** 是否注册内置的调用日志拦截器。 */
-    private boolean loggingEnabled = false;
+    /** 是否通过 {@link java.util.ServiceLoader} 加载 classpath 中声明的 FunctionProvider。 */
+    private boolean discoverFunctions = true;
 
     public boolean isEnabled() {
         return enabled;
@@ -39,27 +38,27 @@ public class UnifyProperties {
         this.enabled = enabled;
     }
 
-    public Duration getDefaultTimeout() {
-        return defaultTimeout;
+    public List<String> getMappingLocations() {
+        return mappingLocations;
     }
 
-    public void setDefaultTimeout(Duration defaultTimeout) {
-        this.defaultTimeout = defaultTimeout;
+    public void setMappingLocations(List<String> mappingLocations) {
+        this.mappingLocations = mappingLocations;
     }
 
-    public FailurePolicy getDefaultFailurePolicy() {
-        return defaultFailurePolicy;
+    public int getCacheSize() {
+        return cacheSize;
     }
 
-    public void setDefaultFailurePolicy(FailurePolicy defaultFailurePolicy) {
-        this.defaultFailurePolicy = defaultFailurePolicy;
+    public void setCacheSize(int cacheSize) {
+        this.cacheSize = cacheSize;
     }
 
-    public boolean isLoggingEnabled() {
-        return loggingEnabled;
+    public boolean isDiscoverFunctions() {
+        return discoverFunctions;
     }
 
-    public void setLoggingEnabled(boolean loggingEnabled) {
-        this.loggingEnabled = loggingEnabled;
+    public void setDiscoverFunctions(boolean discoverFunctions) {
+        this.discoverFunctions = discoverFunctions;
     }
 }

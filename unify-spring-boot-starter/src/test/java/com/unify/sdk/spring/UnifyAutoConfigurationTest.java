@@ -1,212 +1,174 @@
 package com.unify.sdk.spring;
 
-import com.unify.sdk.api.Capability;
-import com.unify.sdk.api.ErrorCode;
-import com.unify.sdk.api.InvokeOptions;
-import com.unify.sdk.api.UnifiedClient;
-import com.unify.sdk.api.UnifiedException;
-import com.unify.sdk.api.UnifiedResult;
-import com.unify.sdk.core.CapabilityConfig;
-import com.unify.sdk.core.InvocationContext;
-import com.unify.sdk.core.SourceAdapter;
-import com.unify.sdk.spi.DataSource;
-import com.unify.sdk.spi.SourceContext;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.unify.sdk.ErrorCode;
+import com.unify.sdk.JsonTransformer;
+import com.unify.sdk.TransformException;
+import com.unify.sdk.function.FunctionProvider;
+import com.unify.sdk.function.TransformFunction;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
-import java.time.Duration;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class UnifyAutoConfigurationTest {
-
-    record Query(String id) {
-    }
-
-    record Result(String text) {
-    }
-
-    static final Capability<Query, Result> CAP = Capability.of("spring.query", Query.class, Result.class);
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(UnifyAutoConfiguration.class));
 
-    static final class EchoSource implements DataSource<String, String> {
-
-        private final Duration delay;
-
-        EchoSource(Duration delay) {
-            this.delay = delay;
-        }
-
-        @Override
-        public String sourceId() {
-            return "echo";
-        }
-
-        @Override
-        public String fetch(String request, SourceContext context) {
-            if (!delay.isZero()) {
-                try {
-                    Thread.sleep(delay.toMillis());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            return "echo:" + request;
-        }
-    }
-
-    static final class EchoAdapter implements SourceAdapter<Query, Result, String, String> {
-
-        @Override
-        public String sourceId() {
-            return "echo";
-        }
-
-        @Override
-        public Capability<Query, Result> capability() {
-            return CAP;
-        }
-
-        @Override
-        public String toSourceRequest(Query request, InvocationContext context) {
-            return request.id();
-        }
-
-        @Override
-        public Result toUnifiedResponse(String response, Query request, InvocationContext context) {
-            return response == null ? null : new Result(response);
-        }
-    }
-
-    @Configuration(proxyBeanMethods = false)
-    static class EchoConfig {
-
-        @Bean
-        DataSource<String, String> echoSource() {
-            return new EchoSource(Duration.ZERO);
-        }
-
-        @Bean
-        SourceAdapter<Query, Result, String, String> echoAdapter() {
-            return new EchoAdapter();
-        }
-
-        @Bean
-        CapabilityConfig<Query, Result> echoCapabilityConfig() {
-            return CapabilityConfig.builder(CAP).timeout(Duration.ofSeconds(1)).build();
-        }
-    }
-
-    @Configuration(proxyBeanMethods = false)
-    static class SlowEchoConfig {
-
-        @Bean
-        DataSource<String, String> echoSource() {
-            return new EchoSource(Duration.ofMillis(1500));
-        }
-
-        @Bean
-        SourceAdapter<Query, Result, String, String> echoAdapter() {
-            return new EchoAdapter();
-        }
-    }
-
-    @Configuration(proxyBeanMethods = false)
-    static class AdapterOnlyConfig {
-
-        @Bean
-        SourceAdapter<Query, Result, String, String> echoAdapter() {
-            return new EchoAdapter();
-        }
-    }
-
-    @Configuration(proxyBeanMethods = false)
-    static class CustomClientConfig {
-
-        static final UnifiedClient CUSTOM = new UnifiedClient() {
-            @Override
-            public <Q, R> UnifiedResult<R> executeWithMeta(Capability<Q, R> capability, Q request,
-                                                           InvokeOptions options) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void close() {
-            }
-        };
-
-        @Bean
-        UnifiedClient customClient() {
-            return CUSTOM;
-        }
-    }
-
     @Test
-    void registersClientFromBeans() {
-        runner.withUserConfiguration(EchoConfig.class).run(context -> {
-            UnifiedClient client = context.getBean(UnifiedClient.class);
-            assertEquals(new Result("echo:a"), client.execute(CAP, new Query("a")));
+    void registersTransformerWithMappingsFromDefaultLocation() {
+        runner.run(context -> {
+            assertThat(context).hasSingleBean(JsonTransformer.class);
+            JsonTransformer transformer = context.getBean(JsonTransformer.class);
+
+            assertThat(transformer.mappingNames()).containsExactly("greeting");
+            assertThat(transformer.mapping("greeting").description()).isEqualTo("测试用映射");
+            assertThat(transformer.transformByName("greeting", "{\"name\":\"Unify\"}"))
+                    .isEqualTo("{\"message\":\"Hello, Unify\"}");
         });
     }
 
     @Test
-    void bindsDefaultTimeoutFromProperties() {
-        runner.withUserConfiguration(SlowEchoConfig.class)
-                .withPropertyValues("unify.default-timeout=100ms")
+    void registersFunctionBeansByBeanNameAndFunctionProviders() {
+        runner.withUserConfiguration(FunctionConfig.class)
+                .withPropertyValues("unify.mapping-locations="
+                        + UnifyProperties.DEFAULT_MAPPING_LOCATION + ",classpath:unify-extra/*.json")
                 .run(context -> {
-                    UnifiedClient client = context.getBean(UnifiedClient.class);
-                    UnifiedException error = assertThrows(UnifiedException.class,
-                            () -> client.execute(CAP, new Query("a")));
-                    assertEquals(ErrorCode.SOURCE_TIMEOUT, error.code());
+                    JsonTransformer transformer = context.getBean(JsonTransformer.class);
+
+                    assertThat(transformer.functionNames()).contains("tag", "twice", "concat");
+                    assertThat(transformer.mappingNames()).containsExactly("greeting", "tagged");
+                    assertThat(transformer.transformByName("tagged", "{\"id\":7}")).isEqualTo("{\"id\":\"#7\"}");
+                    assertThat(transformer.transform("{\"v\":\"ab\"}", "{\"mapping\":\"=twice($.v)\"}"))
+                            .isEqualTo("\"abab\"");
                 });
     }
 
     @Test
-    void appliesCustomizers() {
-        runner.withUserConfiguration(AdapterOnlyConfig.class)
-                .withBean(UnifiedClientCustomizer.class,
-                        () -> builder -> builder.dataSource(new EchoSource(Duration.ZERO)))
-                .run(context -> {
-                    UnifiedClient client = context.getBean(UnifiedClient.class);
-                    assertEquals(new Result("echo:b"), client.execute(CAP, new Query("b")));
-                });
-    }
+    void appliesCustomizersInOrder() {
+        runner.withUserConfiguration(CustomizerConfig.class).run(context -> {
+            JsonTransformer transformer = context.getBean(JsonTransformer.class);
 
-    @Test
-    void failsFastOnMisconfiguration() {
-        runner.withUserConfiguration(AdapterOnlyConfig.class).run(context -> {
-            assertNotNull(context.getStartupFailure());
-            assertTrue(rootCause(context.getStartupFailure()) instanceof IllegalStateException);
+            assertThat(transformer.mappingNames()).containsExactly("greeting", "inline", "later");
+            assertThat(transformer.transformByName("inline", "{}")).isEqualTo("{\"value\":\"picked\"}");
         });
     }
 
     @Test
     void canBeDisabled() {
-        runner.withUserConfiguration(EchoConfig.class)
-                .withPropertyValues("unify.enabled=false")
-                .run(context -> assertTrue(context.getBeansOfType(UnifiedClient.class).isEmpty()));
+        runner.withPropertyValues("unify.enabled=false")
+                .run(context -> assertThat(context).doesNotHaveBean(JsonTransformer.class));
     }
 
     @Test
-    void backsOffWhenUserDefinesClient() {
-        runner.withUserConfiguration(CustomClientConfig.class).run(context ->
-                assertSame(CustomClientConfig.CUSTOM, context.getBean(UnifiedClient.class)));
+    void backsOffWhenTransformerIsDefined() {
+        runner.withUserConfiguration(CustomTransformerConfig.class).run(context -> {
+            assertThat(context).hasSingleBean(JsonTransformer.class);
+            assertThat(context.getBean(JsonTransformer.class).mappingNames()).isEmpty();
+        });
     }
 
-    private static Throwable rootCause(Throwable error) {
-        Throwable current = error;
+    @Test
+    void locationsWithoutFilesRegisterNothing() {
+        runner.withPropertyValues("unify.mapping-locations=classpath*:nothing-here/**/*.json")
+                .run(context -> assertThat(context.getBean(JsonTransformer.class).mappingNames()).isEmpty());
+    }
+
+    @Test
+    void invalidMappingFileFailsStartup() {
+        runner.withPropertyValues("unify.mapping-locations=classpath:unify-broken/*.json").run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure()).rootCause()
+                    .isInstanceOf(TransformException.class)
+                    .hasMessageContaining("映射 broken 位置 /mapping/id")
+                    .hasMessageContaining("broken.json");
+            TransformException failure = (TransformException) rootCause(context.getStartupFailure());
+            assertThat(failure.errorCode()).isEqualTo(ErrorCode.INVALID_DSL);
+        });
+    }
+
+    @Test
+    void invalidFunctionBeanNameFailsStartup() {
+        runner.withUserConfiguration(InvalidFunctionNameConfig.class).run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure()).rootCause()
+                    .hasMessageContaining("函数名无效：mask-phone");
+            assertThat(context.getStartupFailure()).hasStackTraceContaining("无法注册函数 Bean mask-phone");
+        });
+    }
+
+    @Test
+    void invalidCacheSizeFailsStartup() {
+        runner.withPropertyValues("unify.cache-size=-1").run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure()).rootCause()
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("cacheSize");
+        });
+    }
+
+    private static Throwable rootCause(Throwable throwable) {
+        Throwable current = throwable;
         while (current.getCause() != null && current.getCause() != current) {
             current = current.getCause();
         }
         return current;
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class FunctionConfig {
+
+        @Bean
+        TransformFunction tag() {
+            return TransformFunction.of(1, 1, args -> TextNode.valueOf("#" + args.text(0)));
+        }
+
+        @Bean
+        FunctionProvider extraFunctions() {
+            return () -> Map.of("twice", TransformFunction.of(1, 1, args -> TextNode.valueOf(args.text(0).repeat(2))));
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class CustomizerConfig {
+
+        @Bean
+        @Order(2)
+        TransformerCustomizer later() {
+            return builder -> builder.mapping("{\"name\":\"later\",\"mapping\":{}}");
+        }
+
+        @Bean
+        @Order(1)
+        TransformerCustomizer earlier() {
+            return builder -> builder
+                    .function("pick", TransformFunction.of(0, 0, args -> TextNode.valueOf("picked")))
+                    .mapping("{\"name\":\"inline\",\"mapping\":{\"value\":\"=pick()\"}}", "customizer");
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class CustomTransformerConfig {
+
+        @Bean
+        JsonTransformer customTransformer() {
+            return JsonTransformer.create();
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class InvalidFunctionNameConfig {
+
+        @Bean("mask-phone")
+        TransformFunction maskPhone() {
+            return TransformFunction.of(1, 1, args -> args.get(0));
+        }
     }
 }

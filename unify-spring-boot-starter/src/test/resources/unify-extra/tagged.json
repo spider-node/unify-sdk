@@ -1,0 +1,6 @@
+{
+  "name": "tagged",
+  "mapping": {
+    "id": "=tag($.id)"
+  }
+}

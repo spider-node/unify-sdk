@@ -12,7 +12,7 @@
 
     <artifactId>unify-test-kit</artifactId>
     <name>Unify SDK :: Test Kit</name>
-    <description>适配器与数据源的测试工具：桩数据源、适配器校验器。不绑定任何测试框架。</description>
+    <description>映射测试工具：从 classpath 读取 DSL / 源数据 / 期望输出并断言，失败时给出差异路径。不绑定任何测试框架。</description>
 
     <dependencies>
         <dependency>

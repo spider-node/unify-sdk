@@ -12,16 +12,12 @@
 
     <artifactId>unify-core</artifactId>
     <name>Unify SDK :: Core</name>
-    <description>执行引擎：适配器注册、路由、调度、转换、合并。除 api / spi 外无任何第三方运行时依赖。</description>
+    <description>DSL 转换引擎：解析与编译 JSON 映射 DSL、执行转换、内置函数与函数扩展。仅依赖 jackson-databind。</description>
 
     <dependencies>
         <dependency>
-            <groupId>com.unify</groupId>
-            <artifactId>unify-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.unify</groupId>
-            <artifactId>unify-spi</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
 
         <dependency>

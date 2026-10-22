@@ -1,0 +1,15 @@
+{
+  "CUST_ID": 10086,
+  "CUST_NAME": "  张三 ",
+  "MOBILE": "13812345678",
+  "STATUS": "1",
+  "BAL_FEN": 12345,
+  "REG_TIME": "2023-05-06 14:30:00",
+  "TAGS": "vip, new ,",
+  "ADDR": { "PROV": "广东", "CITY": "深圳" },
+  "ORDERS": [
+    { "ORDER_NO": "A001", "AMT_FEN": 1999, "STATE": 2 },
+    { "ORDER_NO": "A002", "AMT_FEN": 500, "STATE": 9 },
+    { "ORDER_NO": "A003", "AMT_FEN": 0, "STATE": 1 }
+  ]
+}

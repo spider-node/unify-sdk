@@ -1,0 +1,6 @@
+{
+  "mapping": {
+    "orderNo": "=tag($.no)",
+    "skus": "$.lines[*].sku"
+  }
+}
