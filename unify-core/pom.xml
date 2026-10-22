@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.unify</groupId>
+        <artifactId>unify-sdk-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>unify-core</artifactId>
+    <name>Unify SDK :: Core</name>
+    <description>执行引擎：适配器注册、路由、调度、转换、合并。除 api / spi 外无任何第三方运行时依赖。</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.unify</groupId>
+            <artifactId>unify-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.unify</groupId>
+            <artifactId>unify-spi</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
